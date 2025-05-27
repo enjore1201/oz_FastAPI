@@ -1,91 +1,100 @@
-
-
-
 name: CI
 
 on:
-    push:
+  push:
 
 jobs:
-    static-analysis:  # mypy, black, ruff 등 정적 분석
-      runs-on: ubuntu-22.04  # 셀제 프로덕션에서는 모든 버전을 고정하는것이 좋다
+  static-analysis:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out the codes
+        uses: actions/checkout@v2
 
-      steps:
-        - name: Check out the codes
-          uses: actions/checkout@v2
+      - name: Setup python environment
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13"
 
-        - name: Setup python environment
-          id: setup-python
-          uses: actions/setup-python@v2
-          with:
-              python-version: "3.13"
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2
+        with:
+          key: poetry-1.8.5
+          path: ~/.local/ # poetry 는 ~/.local 에 설치되므로, 해당 디렉터리를 캐시합니다.
 
-        - name: Cache Poetry
-          id: cache-poetry
-          uses: actions/cache@v2
-          with:
-            key: poetry-1.8.5
-            path: ~/.local/  # poetry 는 ~/.local 에 설치되므로, 이 디렉터리를 텅쩨러 캐시할 것입니다
+      - name: Install Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'  # cache 불러오기에 실패했을 때에만 설치합니다.
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
 
-        - name: Install Poetry
-          if: steps.cache-poetry.outputs.cache-hit != 'true'  # cache 불러오기에 실패했을 때에만 설치합니다.
-          run : |
-            curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
+      - name: Register Poetry bin
+        run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
 
-        - name: Register Poetry bin
-          run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
+      - name: Cache dependencies
+        id: cache-venv
+        uses: actions/cache@v2
+        with:
+          # 파이썬 버전이 바뀌었을 때, lock 파일이나 toml 파일이 바뀌었을때 종속성을 재설치합니다.
+          # 바뀐 것이 없는 경우에는 캐싱된 종속성을 사용합니다.
+          key: python-${{ steps.setup-python.outputs.python-version }}-poetry-lock-${{ hashFiles('poetry.lock') }}-toml-${{ hashFiles('pyproject.toml') }}-poetry-1.8.5
+          path: /home/runner/.cache/pypoetry/virtualenvs/
 
-        - name: Cache dependencies
-          id: cache-venv
-          uses: actions/cache@v2
-          with:
-              # 파이썬 버전이 바뀌었을 때, lock 파일이나 toml 파일이 바뀌었을때 종속성을 재설치합니다.
-              # 바뀐 것이 없는 경우에는 캐싱된 종속성을 사용합니다.
-              key: python-${{ steps.setup-python.outputs.python-version }}-poetry-lock-${{ hashFiles('poetry.lock') }}-toml-${{ hashFiles('pyproject.toml') }}-poetry-1.8.5
-              path: /home/runner/.cache/pypoetry/virtualenvs/
+      - name: Install dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: poetry install --no-root
 
+      - name: Run Black
+        run: poetry run black . --check
 
-        - name: Install dependencies
-          if: steps.cache-venv.outputs.cache-hit != 'true'
-          run: poetry install --no--root
+      - name: Run Ruff
+        run: |
+          poetry run ruff check --select I --fix
+          poetry run ruff check --fix
 
-        - name: Run Black
-          run: poetry run black . --check
+      - name: Run Mypy
+        run: poetry run mypy .
 
-        - name: Run ruff
-          run: |
-            poetry run ruff check --select I
-            portry run ruff check
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out the codes
+        uses: actions/checkout@v2
 
-        - name: Run Mypy
-          run: poetry run mypy
+      - name: Setup python environment
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13"
 
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2
+        with:
+          key: poetry-1.8.5
+          path: ~/.local/
 
-         
+      - name: Install Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
 
-    test: # 전체테스트 실행한다
-      runs-on: ubuntu-22.04
-      steps:
-        - name: Check out the codes
-          uses: actions/checkout@v2
+      - name: Register Poetry bin
+        run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
 
-        - name: Setup python environment
-          id: setup-python
-          uses: actions/setup-python@v2
-          with:
-              python-version: "3.13"
+      - name: Cache dependencies
+        id: cache-venv
+        uses: actions/cache@v2
+        with:
+          key: python-${{ steps.setup-python.outputs.python-version }}-poetry-lock-${{ hashFiles('poetry.lock') }}-toml-${{ hashFiles('pyproject.toml') }}-poetry-1.8.5
+          path: /home/runner/.cache/pypoetry/virtualenvs/
 
-        - name: Install Poetry
-          run: |
-              curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
+      - name: Install dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: poetry install --no-root
 
-        - name: Register Poetry bin
-          run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
-
-        - name: Install dependencies
-          run: poetry install --no-root
-
-        - name: Run tests
-          run: |
-              poetry run coverage run -m pytest .
-              poetry run coverage report -m
+      - name: Run tests
+        run: |
+          poetry run coverage run -m pytest .
+          poetry run coverage report -m
+ㄴ
