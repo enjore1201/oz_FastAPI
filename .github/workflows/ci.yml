@@ -1,4 +1,4 @@
-name: introduce CI
+name: CI
 
 on:
   push:
