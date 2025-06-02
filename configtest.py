@@ -39,5 +39,5 @@ def initialize(request: FixtureRequest) -> Generator[None, None]:
 
 
 @pytest_asyncio.fixture(autouse=True, scope="session")
-def event_loop() -> None:
+def event_loop() -> Any:
     pass
