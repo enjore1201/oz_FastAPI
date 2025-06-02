@@ -13,17 +13,23 @@ orjson = "3.10.12"
 edgedb = "2.2.0"
 black = "^25.1.0"
 httpx = "0.28.1"
+cryptography = "44.0.0"
+aerich = "0.8.1"
+tomlkit = "0.13.2"
+pydantic-settings = "2.7.1"
+configs = "^3.0.3"
+finalizer = "^1.0.0"
+pytest-asyncio = "^1.0.0"
 
+[tool.poetry.dependencies.tortoise-orm]
+version = "0.23.0"
+extras = ["asyncmy"]
 
 [tool.poetry.group.dev.dependencies]
 ruff = "0.8.2"
 mypy = "1.13.0"
 pytest = "8.3.4"
 coverage = "7.6.9"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
@@ -37,8 +43,18 @@ python_version = 3.13
 strict = true
 
 [tool.coverage.run]
-omit = ["*/test_*.py"]  # 루트 혹은 루트 아래의 파일들 중 test_ 로 시작하는 파일을 제외.
+omit = ["*/test_*.py"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+filterwarnings = ['ignore::DeprecationWarning']
+
+[tool.aerich]
+tortoise_orm = "app.configs.tortoise_config.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
