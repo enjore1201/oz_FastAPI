@@ -13,7 +13,7 @@ class TestMeetingRouter(TestCase):
             transport=httpx.ASGITransport(app=app),
             base_url="http://test",
         ) as client:
-            response = await client.post(url="/v1/mysql/meetings")
+            response = await client.post("/v1/mysql/meetings")
 
         # Then
         assert response.status_code == HTTP_200_OK

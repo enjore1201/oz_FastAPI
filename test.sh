@@ -14,7 +14,7 @@ echo "OK"
 
 
 echo "Starting mypy"
-poetry run mypy .
+poetry run dmypy run -- .
 echo "OK"
 
 

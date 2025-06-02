@@ -2,3 +2,7 @@
 __pycache__/
 .coverage
 .test_simple.py
+.dmypy.json
+.main.pu
+.temp.py
+.test_temp.py
